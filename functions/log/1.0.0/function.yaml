@@ -1,0 +1,125 @@
+input:
+  schema:
+    document:
+      type: object
+      properties:
+        message:
+          type: string
+          title: LogMessage
+          description: The message to log.
+        level:
+          type: string
+          enum: [ trace, debug, information, warning, error, critical ]
+          default: information
+          title: LogLevel
+          description: The level of the message to log.
+        context:
+          type: string
+          title: LogSourceContext
+          description: The log's source context. If not set, defaults to the reference of the calling task.
+        arguments:
+          type: object
+          title: LogArguments
+          description: An key/value mapping of the arguments, if any, to use to interpolate the log message.
+        output:
+          type: string
+          title: LogOutput
+          description: The path to the file to append the log message to. If not set, the log will be written to STDOUT.
+        timestamp:
+          type: boolean
+          title: LogTimestamp
+          description: Determines whether or not to timestamp the log message.
+        format:
+          type: string
+          default: '{TIMESTAMP} [{LEVEL}] ({CONTEXT}): {MESSAGE}'
+          title: LogFormat
+          description: A string used to determine the format of the log to perform. The format string accepts {TIMESTAMP}, {CONTEXT}, {LEVEL} and {MESSAGE} arguments.
+      required: [ message ]
+output:
+  schema:
+    document:
+      type: string
+      description: The formatted log message.
+run:
+  script:
+    language: python
+    arguments:
+      message: ${ .message }
+      level: ${ .level }
+      context: ${ .context }
+      arguments: ${ .arguments }
+      output: ${ .output }
+      timestamp: ${ .timestamp }
+      format: ${ .format }
+    code: >
+      import argparse
+      import logging
+      import sys
+      import json
+      from datetime import datetime
+      import io
+      
+      log_levels = {
+          'trace': logging.DEBUG,
+          'debug': logging.DEBUG,
+          'information': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL
+      }
+      
+      class ISO8601Formatter(logging.Formatter):
+          def formatTime(self, record, datefmt=None):
+              # Format the time in ISO 8601 format
+              return datetime.fromtimestamp(record.created).astimezone().isoformat()
+      
+      def main():
+          parser = argparse.ArgumentParser(description="Perform logging based on specified parameters.")
+          parser.add_argument('--message', type=str, required=True, help="The message to log.")
+          parser.add_argument('--level', type=str, choices=['trace', 'debug', 'information', 'warning', 'error', 'critical'], default='information', help="The level of the message to log.")
+          parser.add_argument('--context', type=str, default='__main__', help="The log's source context. Defaults to '__main__'.")
+          parser.add_argument('--arguments', type=str, help="A JSON string of key/value mapping of arguments to use to interpolate the log message.")
+          parser.add_argument('--output', type=str, help="The path to the file to append the log message to. Defaults to STDOUT.")
+          parser.add_argument('--timestamp', action='store_true', help="Determines whether or not to timestamp the log message.")
+          parser.add_argument('--format', type=str, default='{TIMESTAMP} [{LEVEL}] ({CONTEXT}): {MESSAGE}', help="The format string for the log message.")
+          args = parser.parse_args()
+          log_level = log_levels[args.level]
+          log_context = args.context
+          if args.arguments:
+              try:
+                  log_arguments = json.loads(args.arguments)
+              except json.JSONDecodeError:
+                  print("Error: Invalid JSON format for --arguments")
+                  sys.exit(1)
+          else:
+              log_arguments = {}
+          log_message = args.message.format(**log_arguments)
+          logger = logging.getLogger(log_context)
+          logger.setLevel(log_level)
+          formatter = ISO8601Formatter(args.format.replace('{TIMESTAMP}', '%(asctime)s')
+                                        .replace('{LEVEL}', '%(levelname)s')
+                                        .replace('{CONTEXT}', '%(name)s')
+                                        .replace('{MESSAGE}', '%(message)s'))
+          if args.output:
+              handler = logging.FileHandler(args.output)
+          else:
+              handler = logging.StreamHandler(sys.stdout)
+          handler.setLevel(log_level)
+          handler.setFormatter(formatter)
+          logger.addHandler(handler)
+          log_output = io.StringIO()
+          log_capture_handler = logging.StreamHandler(log_output)
+          log_capture_handler.setFormatter(formatter)
+          logger.addHandler(log_capture_handler)
+          if args.timestamp:
+              logger.log(log_level, log_message)
+          else:
+              no_timestamp_formatter = logging.Formatter(args.format.replace('{TIMESTAMP}', '').replace('()', ''))
+              handler.setFormatter(no_timestamp_formatter)
+              logger.log(log_level, log_message)
+          if args.output:
+              log_output.seek(0)
+              print(log_output.getvalue().strip())
+      if __name__ == "__main__":
+          main()
+            
