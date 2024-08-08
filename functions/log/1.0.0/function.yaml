@@ -51,7 +51,7 @@ run:
       output: ${ .output }
       timestamp: ${ .timestamp }
       format: ${ .format }
-    code: >
+    code: |
       import argparse
       import logging
       import sys
