@@ -8,7 +8,7 @@ The Log function allows you to log messages in a Serverless Workflow. You can cu
 |:-----|:----:|:--------:|:------------|
 | `message` | `string` | `yes` | The message to log. <br>The message can include placeholders that will be replaced by values from `arguments`. |
 | `level` | `string` | `no` | The severity level of the log message. <br>Supported values are: `trace`, `debug`, `information`, `warning`, `error`, `critical`. <br>Default to `information`. |
-| `context` | `string` | `no` | The log's source context.<br>If not set, defaults to the reference of the calling task. |
+| `context` | `string` | `no` | The log's source context. |
 | `arguments` | `map` | `no` | A key/value mapping used to interpolate the log message.<br>Placeholders in the `message` string will be replaced by corresponding values from this object. |
 | `output` | `string` | `no` | The path to the file to append the log message to.<br>If not set, the log will be written to `STDOUT`. |
 | `timestamp` | `boolean` | `no` | Determines whether or not to include a timestamp in the log message. |
