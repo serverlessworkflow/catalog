@@ -86,7 +86,9 @@ run:
           log_level = log_levels[args.level]
           
           format_string = args.format
-          if not args.timestamp:
+          if args.timestamp:
+              format_string = format_string.replace('{TIMESTAMP}', '%(asctime)s')
+          else:
               format_string = format_string.replace('{TIMESTAMP}', '')
           if not args.context:
               format_string = format_string.replace('({CONTEXT})', '')
