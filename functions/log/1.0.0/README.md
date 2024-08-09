@@ -30,7 +30,7 @@ do:
       with:
         message: Processing file {filename} in task {task_id}
         level: debug                                            #if not set, would default to 'information'
-        context: FileProcessingTask                             #if not set, the context would default to '/do/0/log'
+        context: FileProcessingTask                             
         arguments:
           filename: data.csv
           task_id: task-1234
