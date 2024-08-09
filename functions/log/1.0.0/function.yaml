@@ -31,7 +31,7 @@ input:
           description: Determines whether or not to timestamp the log message.
         format:
           type: string
-          default: '{TIMESTAMP} [{LEVEL}]({CONTEXT}): {MESSAGE}'
+          default: '{TIMESTAMP} [{LEVEL}] ({CONTEXT}): {MESSAGE}'
           title: LogFormat
           description: A string used to determine the format of the log to perform. The format string accepts {TIMESTAMP}, {CONTEXT}, {LEVEL} and {MESSAGE} arguments.
       required: [ message ]
@@ -80,7 +80,7 @@ run:
           parser.add_argument('--arguments', type=str, help="A JSON string of key/value mapping of arguments to use to interpolate the log message.")
           parser.add_argument('--output', type=str, help="The path to the file to append the log message to. Defaults to STDOUT.")
           parser.add_argument('--timestamp', action='store_true', help="Determines whether or not to timestamp the log message.")
-          parser.add_argument('--format', type=str, default='{TIMESTAMP} [{LEVEL}]({CONTEXT}): {MESSAGE}', help="The format string for the log message.")
+          parser.add_argument('--format', type=str, default='{TIMESTAMP} [{LEVEL}] ({CONTEXT}): {MESSAGE}', help="The format string for the log message.")
           args = parser.parse_args()
           
           log_level = log_levels[args.level]
