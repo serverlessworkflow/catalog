@@ -26,7 +26,7 @@ document:
   version: '1.0.0'
 do:
   - log:
-      call: log:1.0.0                                           #could also be called using the function's url instead: https://github.com/serverlessworkflow/catalog/functions/log/1.0.0
+      call: log:1.0.0                                           #could also be called using the function's url instead: https://raw.githubusercontent.com/serverlessworkflow/catalog/main/functions/log/1.0.0/function.yaml
       with:
         message: Processing file {filename} in task {task_id}
         level: debug                                            #if not set, would default to 'information'
