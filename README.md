@@ -47,7 +47,7 @@ document:
   version: '1.0.0'
 do:
   - callCatalogedFunction:
-      call: https://github.com/serverlessworkflow/catalog/functions/log/1.0.0 #link to the repository directory that contains the function.yaml of the custom function to call.
+      call: https://raw.githubusercontent.com/serverlessworkflow/catalog/main/functions/log/1.0.0/function.yaml #link to the repository directory that contains the function.yaml of the custom function to call.
       #call: log:1.0.0 <--- this would also be a correct way to reference the function, as it is registered in the official catalog.
       with:
         message: Hello, world!
