@@ -91,7 +91,7 @@ run:
           else:
               format_string = format_string.replace('{TIMESTAMP}', '')
           if not args.context:
-              format_string = format_string.replace('({CONTEXT})', '')
+              format_string = format_string.replace(' ({CONTEXT})', '')
               
           format_string = format_string.strip(':').strip()
 
