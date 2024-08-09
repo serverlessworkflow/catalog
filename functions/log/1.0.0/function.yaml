@@ -15,6 +15,7 @@ input:
           description: The level of the message to log.
         context:
           type: string
+          default: ${ $task.reference }
           title: LogSourceContext
           description: The log's source context. If not set, defaults to the reference of the calling task.
         arguments:
