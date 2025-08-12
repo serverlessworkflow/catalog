@@ -1,0 +1,30 @@
+input:
+  schema:
+    document:
+      type: object
+      properties:
+        token:
+          type: string
+          title: JWT Token
+          description: The JWT token to parse (can include "Bearer " prefix)
+        operation:
+          type: string
+          enum: [ "parse", "extractUser", "extractClaim" ]
+          default: "parse"
+          title: Operation
+          description: The operation to perform on the JWT token
+        claim:
+          type: string
+          title: Claim Name
+          description: The name of the specific claim to extract (required for extractClaim operation)
+      required: [ token ]
+output:
+  schema:
+    document:
+      type: object
+      description: The parsed JWT payload or extracted claim as a JSON object
+call: jwt-parser
+with:
+  operation: ${ .operation }
+  token: ${ .token }
+  claim: ${ .claim }
