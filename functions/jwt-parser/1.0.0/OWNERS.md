@@ -1,4 +1,2 @@
 # OWNERS
-
-* @gabriel-farache
-* @ishan
+* @ishanjogi89
