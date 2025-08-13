@@ -8,20 +8,21 @@ This function implements JWT payload extraction through a `set` task using jq ex
 
 **Core JWT Decoding Logic:**
 ```jq
-if (.token | startswith("Bearer ")) then
-  (.token[7:] | split(".")[1] | @base64d | fromjson)
-else
-  (.token | split(".")[1] | @base64d | fromjson)
-end
+(if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+split(".") |
+if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+@base64d |
+fromjson
 ```
 
 **Technical Steps:**
 1. **Prefix Handling**: Detects and removes "Bearer " prefix if present
 2. **Token Splitting**: Splits JWT on "." to isolate header, payload, signature
-3. **Payload Extraction**: Selects the middle part (index 1) containing claims
-4. **Base64 Decoding**: Uses `@base64d` to decode the base64url payload
-5. **JSON Parsing**: Converts decoded string to JSON object with `fromjson`
-6. **Optional Claim Navigation**: Uses jq path expressions for specific claim extraction
+3. **Format Validation**: Ensures exactly 3 parts (header.payload.signature)
+4. **Payload Extraction**: Selects the middle part (index 1) containing claims
+5. **Base64 Decoding**: Uses `@base64d` to decode the base64url payload
+6. **JSON Parsing**: Converts decoded string to JSON object with `fromjson`
+7. **Optional Claim Navigation**: Uses jq path expressions for specific claim extraction
 
 ## Usage
 
@@ -116,21 +117,27 @@ The function processes the **payload** section (index 1 after splitting on ".")
 
 ### jq Expression Breakdown
 
-**Primary Expression:**
+**JWT Decoding Expression:**
 ```jq
-if (.token | startswith("Bearer ")) then
-  (.token[7:] | split(".")[1] | @base64d | fromjson)
-else
-  (.token | split(".")[1] | @base64d | fromjson)
-end
+(if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+split(".") |
+if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+@base64d |
+fromjson
 ```
 
 **Claim Path Expression:**
 ```jq
-if .claimPath then
-  .claims | getpath(.claimPath | split(".") | map(select(. != "")))
+((if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+split(".") |
+if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+@base64d |
+fromjson) as $decoded |
+if (.claimPath // null) != null then
+  (.claimPath | split(".") | map(select(. != ""))) as $path |
+  $decoded | getpath($path)
 else
-  .claims
+  $decoded
 end
 ```
 
@@ -157,6 +164,29 @@ The function will fail with jq errors if:
 ## Implementation Notes
 
 - **No signature verification**: Function extracts claims without cryptographic validation
-- **Base64URL decoding**: Uses jq's `@base64d` which handles base64url format
-- **Path navigation**: Uses jq's `getpath()` for safe claim extraction
-- **Prefix handling**: Automatically detects and strips "Bearer " prefix
+- **Base64URL decoding**: Uses jq's `@base64d` which handles base64url format  
+- **Path navigation**: Uses `getpath()` with string splitting for safe claim extraction
+- **Prefix handling**: Conditional logic automatically detects and strips "Bearer " prefix
+- **Pipeline processing**: Uses jq pipe operators for clean data transformation flow
+- **Null safety**: Uses `has("claimPath")` to check for optional parameter presence
+
+## Technical Validation
+
+### JWT Structure Validation
+The function expects standard JWT format: `header.payload.signature`
+- **Header**: Algorithm and token type (ignored)
+- **Payload**: Base64URL-encoded JSON claims (processed)  
+- **Signature**: Cryptographic signature (ignored)
+
+### Base64URL Decoding
+JWT uses Base64URL encoding (RFC 4648 Section 5):
+- Uses `-` and `_` instead of `+` and `/`
+- No padding characters required
+- jq's `@base64d` handles this automatically
+
+### Claim Path Syntax
+Claim paths follow jq object navigation:
+- `.sub` - Direct property access
+- `.custom.department` - Nested object access  
+- `.roles[0]` - Array element access
+- Path components split on `.` and filtered for non-empty strings

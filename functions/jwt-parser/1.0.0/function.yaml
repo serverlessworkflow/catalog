@@ -20,14 +20,20 @@ output:
 use: set
 set:
   claims: >-
-    if (.token | startswith("Bearer ")) then
-      (.token[7:] | split(".")[1] | @base64d | fromjson)
-    else
-      (.token | split(".")[1] | @base64d | fromjson)
-    end
+    (if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+    split(".") |
+    if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+    @base64d |
+    fromjson
   result: >-
-    if .claimPath then
-      .claims | getpath(.claimPath | split(".") | map(select(. != "")))
+    ((if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+    split(".") |
+    if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+    @base64d |
+    fromjson) as $decoded |
+    if (.claimPath // null) != null then
+      (.claimPath | split(".") | map(select(. != ""))) as $path |
+      $decoded | getpath($path)
     else
-      .claims
+      $decoded
     end
