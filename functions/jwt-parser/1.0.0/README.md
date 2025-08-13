@@ -1,180 +1,109 @@
 # JWT Parser Function
 
-The JWT Parser function allows SonataFlow workflows to parse and extract information from JWT (JSON Web Token) tokens. This is particularly useful for accessing user information and claims from authentication tokens passed in workflow headers.
+The JWT Parser function allows Serverless Workflow 1.x workflows to parse and extract information from JWT (JSON Web Token) tokens using jq expressions. This function decodes the JWT payload and optionally extracts specific claims.
 
 ## Overview
 
-This function provides three main operations:
-- **parse**: Extract the complete JWT payload as a JSON object
-- **extractUser**: Extract standard user information from JWT claims (sub, preferred_username, email, etc.)
-- **extractClaim**: Extract a specific claim by name
+This function uses a `set` task with jq expressions to:
+- Decode JWT tokens (with or without "Bearer " prefix)
+- Extract the complete JWT payload as JSON
+- Optionally extract specific claims using jq paths
 
 ## Usage
 
-### Basic JWT Parsing
+### Basic JWT Parsing (Complete Payload)
 
-```json
-{
-  "functions": [
-    {
-      "name": "parseJWT",
-      "type": "custom",
-      "operation": "jwt-parser"
-    }
-  ],
-  "states": [
-    {
-      "name": "parseToken",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "parseAction",
-          "functionRef": {
-            "refName": "parseJWT",
-            "arguments": {
-              "token": "${ $WORKFLOW.headers.\"Authorization\" }",
-              "operation": "parse"
-            }
-          }
-        }
-      ]
-    }
-  ]
-}
+```yaml
+document:
+  dsl: 1.0.0-alpha1
+  namespace: examples
+  name: jwt-parsing
+  version: 1.0.0
+do:
+  - parseToken:
+      use: jwt-parser
+      with:
+        token: ${ .headers.authorization }
 ```
 
-### Extract User Information
+### Extract Specific Claims
 
-```json
-{
-  "functions": [
-    {
-      "name": "extractUser",
-      "type": "custom",
-      "operation": "jwt-parser:extractUser"
-    }
-  ],
-  "states": [
-    {
-      "name": "extractUserName",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "extractUserAction",
-          "functionRef": {
-            "refName": "extractUser",
-            "arguments": {
-              "token": "${ $WORKFLOW.headers.\"X-Authorization-acme_financial_auth\" }"
-            }
-          }
-        }
-      ],
-      "stateDataFilter": {
-        "output": "${ { user: .result.preferred_username } }"
-      }
-    }
-  ]
-}
+```yaml
+document:
+  dsl: 1.0.0-alpha1
+  namespace: examples  
+  name: jwt-user-extraction
+  version: 1.0.0
+do:
+  - extractUsername:
+      use: jwt-parser
+      with:
+        token: ${ .headers.authorization }
+        claimPath: ".preferred_username"
+  - extractEmail:
+      use: jwt-parser
+      with:
+        token: ${ .headers.authorization }
+        claimPath: ".email"
 ```
 
-### Extract Specific Claim
+### Multiple Claim Extraction
 
-```json
-{
-  "functions": [
-    {
-      "name": "extractClaim",
-      "type": "custom", 
-      "operation": "jwt-parser:extractClaim"
-    }
-  ],
-  "states": [
-    {
-      "name": "extractRole",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "extractRoleAction",
-          "functionRef": {
-            "refName": "extractClaim",
-            "arguments": {
-              "token": "${ $WORKFLOW.headers.\"Authorization\" }",
-              "claim": "role"
-            }
-          }
-        }
-      ]
-    }
-  ]
-}
+```yaml
+document:
+  dsl: 1.0.0-alpha1
+  namespace: examples
+  name: jwt-multi-claims
+  version: 1.0.0
+do:
+  - getUserInfo:
+      use: jwt-parser
+      with:
+        token: ${ .headers["x-authorization-acme_financial_auth"] }
+  - processUserData:
+      use: set
+      set:
+        username: ${ .result.preferred_username }
+        email: ${ .result.email }
+        userId: ${ .result.sub }
+        message: ${ "Welcome " + .username + "! Your request has been processed." }
 ```
 
-## Complete Example
+## Complete Example - Loan Approval with User Personalization
 
-Here's a complete workflow that demonstrates JWT parsing for user personalization:
-
-```json
-{
-  "id": "jwt_example",
-  "version": "1.0",
-  "name": "JWT Token Processing Example",
-  "start": "extractUser",
-  "functions": [
-    {
-      "name": "extractUser",
-      "type": "custom",
-      "operation": "jwt-parser:extractUser"
-    }
-  ],
-  "states": [
-    {
-      "name": "extractUser",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "extractUserAction",
-          "functionRef": {
-            "refName": "extractUser",
-            "arguments": {
-              "token": "${ $WORKFLOW.headers.\"X-Authorization-acme_financial_auth\" }"
-            }
-          }
-        }
-      ],
-      "stateDataFilter": {
-        "output": "${ { user: .result.preferred_username } }"
-      },
-      "transition": "personalizedResponse"
-    },
-    {
-      "name": "personalizedResponse",
-      "type": "inject",
-      "data": {
-        "approved": true
-      },
-      "stateDataFilter": {
-        "output": "${ { message: \"Congrats \\(.user)! Your request has been approved!\", approved } }"
-      },
-      "end": true
-    }
-  ]
-}
+```yaml
+document:
+  dsl: 1.0.0-alpha1
+  namespace: examples
+  name: loan-approval-jwt
+  version: 1.0.0
+do:
+  - extractUserInfo:
+      use: jwt-parser
+      with:
+        token: ${ .headers["x-authorization-acme_financial_auth"] }
+  - processLoanApproval:
+      use: set
+      set:
+        user: ${ .result.preferred_username }
+        userId: ${ .result.sub }
+        email: ${ .result.email }
+        loanApproved: true
+        message: ${ "Congrats " + .user + "! Your loan has been approved!" }
 ```
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `token` | string | Yes | The JWT token to parse (Bearer prefix will be automatically removed) |
-| `operation` | string | No | Operation to perform: "parse", "extractUser", or "extractClaim" (default: "parse") |
-| `claim` | string | No | Name of specific claim to extract (required when operation is "extractClaim") |
+| `token` | string | Yes | The JWT token to parse (Bearer prefix will be automatically handled) |
+| `claimPath` | string | No | jq path to extract specific claim (e.g., ".sub", ".preferred_username", ".email") |
 
 ## Output
 
-The function returns a JSON object containing:
-- For `parse`: Complete JWT payload
-- For `extractUser`: Standard user claims (sub, preferred_username, email, name, etc.)
-- For `extractClaim`: The specific claim value
+The function returns:
+- `claims`: The complete decoded JWT payload as JSON object
+- `result`: Either the complete payload (if no claimPath) or the specific claim value (if claimPath provided)
 
 ## Token Format Support
 
@@ -182,12 +111,32 @@ The function supports JWT tokens in various formats:
 - Raw JWT token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
 - Bearer token: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
 
+## jq Expression Details
+
+The function uses these jq expressions:
+- **Token cleanup**: Removes "Bearer " prefix if present
+- **JWT decoding**: Splits token, extracts payload (part 1), base64 decodes, and parses JSON
+- **Claim extraction**: Uses jq path navigation to extract specific claims
+
+## Common Claim Paths
+
+- `.sub` - Subject (user ID)
+- `.preferred_username` - Username  
+- `.email` - Email address
+- `.name` - Full name
+- `.given_name` - First name
+- `.family_name` - Last name
+- `.roles` - User roles array
+- `.exp` - Expiration timestamp
+- `.iat` - Issued at timestamp
+
 ## Error Handling
 
-The function will fail if:
+The jq expressions will fail if:
 - Token is null or empty
-- Token format is invalid
-- Required claim parameter is missing for extractClaim operation
+- Token format is invalid (not 3 parts separated by dots)
+- JWT payload is not valid base64 or JSON
+- Specified claimPath does not exist
 
 ## Security Note
 
