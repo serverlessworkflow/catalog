@@ -15,25 +15,18 @@ input:
 output:
   schema:
     document:
-      type: object
-      description: The parsed JWT payload or extracted claim as a JSON object
-use: set
-set:
-  claims: >-
-    (if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
-    split(".") |
-    if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
-    @base64d |
-    fromjson
-  result: >-
-    ((if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
-    split(".") |
-    if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
-    @base64d |
-    fromjson) as $decoded |
-    if (.claimPath // null) != null then
-      (.claimPath | split(".") | map(select(. != ""))) as $path |
-      $decoded | getpath($path)
-    else
-      $decoded
-    end
+      description: The parsed JWT payload (when claimPath not provided) or the specific claim value (when claimPath provided)
+run:
+  set:
+    result: >-
+      ((if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+      split(".") |
+      if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+      @base64d |
+      fromjson) as $decoded |
+      if (.claimPath // null) != null then
+        (.claimPath | split(".") | map(select(. != ""))) as $path |
+        $decoded | getpath($path)
+      else
+        $decoded
+      end

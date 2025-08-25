@@ -4,7 +4,7 @@ A Serverless Workflow 1.x function that decodes JWT (JSON Web Token) payloads us
 
 ## Technical Implementation
 
-This function implements JWT payload extraction through a `set` task using jq expressions:
+This function implements JWT payload extraction through a `run` task using jq expressions:
 
 **Core JWT Decoding Logic:**
 ```jq
@@ -36,10 +36,10 @@ document:
   version: 1.0.0
 do:
   - decodeJWT:
-      use: jwt-parser
+      call: jwt-parser
       with:
         token: ${ .headers.authorization }
-        # Returns: { claims: {...}, result: {...} }
+        # Returns: complete JWT payload as JSON object
 ```
 
 ### Specific Claim Extraction
@@ -52,17 +52,17 @@ document:
   version: 1.0.0
 do:
   - extractSubject:
-      use: jwt-parser
+      call: jwt-parser
       with:
         token: ${ .headers.authorization }
         claimPath: ".sub"
-        # Returns: { claims: {...}, result: "user-id-123" }
+        # Returns: "user-id-123"
   - extractNestedClaim:
-      use: jwt-parser
+      call: jwt-parser
       with:
         token: ${ .headers.authorization }
         claimPath: ".custom.department"
-        # Returns: { claims: {...}, result: "engineering" }
+        # Returns: "engineering"
 ```
 
 ### Token Format Handling
@@ -75,11 +75,11 @@ document:
   version: 1.0.0
 do:
   - parseRawToken:
-      use: jwt-parser
+      call: jwt-parser
       with:
         token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"
   - parseBearerToken:
-      use: jwt-parser
+      call: jwt-parser
       with:
         token: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"
         # Both handle the token format automatically
@@ -94,17 +94,25 @@ do:
 | `claimPath` | string | No | jq path expression for specific claim extraction |
 
 ### Output Structure
+
+**When `claimPath` is NOT provided** (complete payload):
 ```json
 {
-  "claims": {
-    "sub": "user-123",
-    "preferred_username": "john.doe",
-    "email": "john@example.com",
-    "exp": 1234567890,
-    "iat": 1234567800
-  },
-  "result": "..." // Complete payload or specific claim based on claimPath
+  "sub": "user-123",
+  "preferred_username": "john.doe",
+  "email": "john@example.com",
+  "exp": 1234567890,
+  "iat": 1234567800
 }
+```
+
+**When `claimPath` is provided** (specific claim value):
+```json
+"user-123"
+```
+or
+```json
+"engineering"
 ```
 
 ## Technical Details
