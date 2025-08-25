@@ -1,0 +1,32 @@
+input:
+  schema:
+    document:
+      type: object
+      properties:
+        token:
+          type: string
+          title: JWT Token
+          description: The JWT token to parse (can include "Bearer " prefix)
+        claimPath:
+          type: string
+          title: Claim Path
+          description: Optional jq path to extract specific claim (e.g., ".sub", ".preferred_username", ".email")
+      required: [ token ]
+output:
+  schema:
+    document:
+      description: The parsed JWT payload (when claimPath not provided) or the specific claim value (when claimPath provided)
+run:
+  set:
+    result: >-
+      ((if (.token | startswith("Bearer ")) then .token[7:] else .token end) |
+      split(".") |
+      if length != 3 then error("Invalid JWT format: must have 3 parts") else .[1] end |
+      @base64d |
+      fromjson) as $decoded |
+      if (.claimPath // null) != null then
+        (.claimPath | split(".") | map(select(. != ""))) as $path |
+        $decoded | getpath($path)
+      else
+        $decoded
+      end
