@@ -1,4 +1,6 @@
 # Serverless Workflow Catalog
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Fcatalog.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Fcatalog?ref=badge_shield)
+
 
 This repository is dedicated to storing and managing custom functions, also known as extensions, that enhance the capabilities of the Serverless Workflow Domain Specific Language (DSL). This repository serves as a central hub where developers can contribute, discover, and utilize various extensions designed to extend the native functionality of the Serverless Workflow DSL. These extensions enable users to implement specific tasks, custom logic, or integrations that are not covered by the core language features.
 
@@ -60,3 +62,7 @@ We welcome contributions from the community! If you would like to contribute to 
 For detailed instructions on how to contribute, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
 Thank you for helping us improve the Serverless Workflow Catalog!
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Fcatalog.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Fcatalog?ref=badge_large)
